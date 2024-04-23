@@ -315,6 +315,21 @@ contract Fullcount is EIP712 {
         emit AtBatJoined(atBatID, nftAddress, tokenID, firstSessionID, role);
     }
 
+    function joinSessionV2(uint256 sessionID, address nftAddress, uint256 tokenID) external virtual {
+        require(sessionID <= NumSessions, "Fullcount.joinSession: session does not exist");
+
+        require(_isTokenOwner(nftAddress, tokenID), "Fullcount.joinSession: msg.sender is not NFT owner");
+
+        Session storage session = SessionState[sessionID];
+
+        _joinSession(sessionID, nftAddress, tokenID);
+
+        uint256 atBatID = SessionAtBat[sessionID];
+        if (atBatID > 0) {
+            _joinAtBat(atBatID, nftAddress, tokenID, sessionID);
+        }
+    }
+
     // Emits:
     // - SessionJoined
     function joinSession(
