@@ -315,6 +315,61 @@ contract Fullcount is EIP712 {
         emit AtBatJoined(atBatID, nftAddress, tokenID, firstSessionID, role);
     }
 
+    function joinSessionV2(uint256 sessionID, address nftAddress, uint256 tokenID) external virtual {
+        require(sessionID <= NumSessions, "Fullcount.joinSession: session does not exist");
+
+        require(_isTokenOwner(nftAddress, tokenID), "Fullcount.joinSession: msg.sender is not NFT owner");
+
+        Session storage session = SessionState[sessionID];
+
+        _joinSession(sessionID, nftAddress, tokenID);
+
+        uint256 atBatID = SessionAtBat[sessionID];
+        if (atBatID > 0) {
+            _joinAtBat(atBatID, nftAddress, tokenID, sessionID);
+        }
+    }
+
+    function joinSessionV3(
+        uint256 sessionID,
+        address nftAddress,
+        uint256 tokenID,
+        bytes memory signature
+    )
+        external
+        virtual
+    {
+        require(sessionID <= NumSessions, "Fullcount.joinSession: session does not exist");
+
+        require(_isTokenOwner(nftAddress, tokenID), "Fullcount.joinSession: msg.sender is not NFT owner");
+
+        Session storage session = SessionState[sessionID];
+
+        if (SessionRequiresSignature[sessionID]) {
+            address sessionStarter;
+            if (session.pitcherNFT.nftAddress != address(0)) {
+                sessionStarter = IERC721(session.pitcherNFT.nftAddress).ownerOf(session.pitcherNFT.tokenID);
+            } else if (session.batterNFT.nftAddress != address(0)) {
+                sessionStarter = IERC721(session.batterNFT.nftAddress).ownerOf(session.batterNFT.tokenID);
+            } else {
+                revert("Fullcount.joinSession: idiot programmer");
+            }
+
+            bytes32 sessionMessageHash = sessionHash(sessionID);
+            require(
+                SignatureChecker.isValidSignatureNow(sessionStarter, sessionMessageHash, signature),
+                "Fullcount.joinSession: invalid signature in session requiring signature to join."
+            );
+        }
+
+        _joinSession(sessionID, nftAddress, tokenID);
+
+        uint256 atBatID = SessionAtBat[sessionID];
+        if (atBatID > 0) {
+            _joinAtBat(atBatID, nftAddress, tokenID, sessionID);
+        }
+    }
+
     // Emits:
     // - SessionJoined
     function joinSession(
