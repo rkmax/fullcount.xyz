@@ -593,7 +593,6 @@ contract Fullcount is EIP712 {
      * I like the way we have it implemented now, where a player can only commit once per character.
      * It gives the commitment a sense of urgency, immediacy, and gravity.
      */
-
     function commitPitch(uint256 sessionID, bytes memory signature) external {
         uint256 progress = _sessionProgress(sessionID);
         if (progress == 6) {
@@ -669,6 +668,7 @@ contract Fullcount is EIP712 {
         uint256 totalMass = distribution[0] + distribution[1] + distribution[2] + distribution[3] + distribution[4]
             + distribution[5] + distribution[6] + distribution[7];
 
+        // sample is a _randomSample of the total mass of the distribution
         uint256 sample = _randomSample(nonce0, nonce1, totalMass);
 
         uint256 cumulativeMass = distribution[0];
